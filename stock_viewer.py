@@ -43,6 +43,8 @@ if 'nasdaq' not in st.session_state:
         st.session_state.nyse = pd.read_csv('nyse.csv')
     except:
         save_stock_list()
+        st.session_state.nasdaq = pd.read_csv('nasdaq.csv')
+        st.session_state.nyse = pd.read_csv('nyse.csv')
     
 st.title('Stock log graph')
 

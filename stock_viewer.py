@@ -7,69 +7,66 @@ Created on Fri Jul 12 19:24:19 2024
 
 import FinanceDataReader as fdr
 import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
-from datetime import datetime, timedelta
-from scipy.optimize import curve_fit
+from datetime import datetime
 import streamlit as st
+from thefuzz import process
+from plot import draw_plot
+from save import save_stock_list
+import schedule
 
-def get_stocks_prices(stocks, start_date, end_date):
-    stocks_prices = {}
-    for stock in stocks:
-        try:
-            stocks_prices[stock] = fdr.DataReader(stock, start_date, end_date)['Adj Close']
-        except:
-            stocks_prices[stock] = fdr.DataReader(stock, start_date, end_date)['Close']
-    #print(stocks_prices)
-    try:
-        stocks_prices = pd.DataFrame(stocks_prices)
-    except:
-        global t
-        t = t - timedelta(days = 1)
-        end_date = t.strftime("%Y-%m-%d")
-        stocks_prices = get_stocks_prices(stocks, start_date, end_date)
-    return stocks_prices
+def guess_stock_():
+    stock_ = st.session_state.stock_#.upper()
+    total_market = pd.concat([st.session_state.nasdaq, st.session_state.nyse], ignore_index=True)
+    st.session_state.candidates = process.extract(stock_, pd.concat([total_market['Symbol'], total_market['Name']], axis = 0), limit=10)
+    st.session_state.stock_ = ""
+    
+def add_stock_(stock_):
+    if not stock_ in st.session_state.stocks:
+        st.session_state.stocks.append(stock_)
+    st.session_state.candidates = []
+    st.experimental_rerun()
 
-def func(x, a, b):
-    return a * np.exp(b * x)
+def delete_all():
+    st.session_state.stocks = []
+    st.experimental_rerun()
 
-def log_func(x, a, b):
-    return np.log(func(x, a, b))
+schedule.every().day.at("09:00").do(save_stock_list)
 
-# def exp_func(x, a, b):
-#     return func(x, a, b)*x**2
+end_date = datetime.now().strftime("%Y-%m-%d")
 
-def binarize(x, std):
-    if 1/(1+std*30) < x < (1+std*30):
-        return 1
-    else:
-        return 0
+if 'stocks' not in st.session_state:
+    st.session_state.stocks = ['IXIC', 'DJI', 'TQQQ', 'QQQ', 'DDM', 'SPY']
 
-def benchmark(cases, day, a, b, std):
-    correct_cases = cases/func(day, a, b)
-    correct_cases = correct_cases.apply(lambda x: binarize(x, std))
-    return np.dot(correct_cases.T,day)
-
-t = datetime.now()
-end_date = t.strftime("%Y-%m-%d")
-
-stocks = ['IXIC', 'DJI',
-          'TQQQ', 'QQQ', 'DDM', 'SPY']
-
-if 'start_date' not in st.session_state:
-    st.session_state.stocks = stocks
-
+if 'nasdaq' not in st.session_state:
+    st.session_state.nasdaq = pd.read_csv('nasdaq.csv')
+    st.session_state.nyse = pd.read_csv('nyse.csv')
+    
 st.title('Stock log graph')
-st.subheader('set the config')
-stock_ = st.text_input('Enter the stock ticker', key='stock_')
-if not stock_ is '' and not stock_ in st.session_state.stocks:
-    st.session_state.stocks.append(stock_)
-start_date = datetime.strptime('2008-01-01', '%Y-%m-%d')
-st.session_state.start_date = st.date_input('Start Date input', start_date)
 
+cols = st.columns(2)
+
+cols[0].subheader('Nasdaq')
+cols[0].dataframe(st.session_state.nasdaq)
+cols[1].subheader('Nyse')
+cols[1].dataframe(st.session_state.nyse)
+
+st.subheader('Set the config')
+cols = st.columns(2)
+cols[0].text_input('Search a stock ticker', key='stock_', on_change=guess_stock_)
+start_date = datetime.strptime('2008-01-01', '%Y-%m-%d')
+st.session_state.start_date = cols[1].date_input('Start Date input', start_date)
+
+if 'candidates' in st.session_state:
+    cols = st.columns(1)
+    for i, cadidate in enumerate(st.session_state.candidates):
+        index = cadidate[2]
+        total_market = pd.concat([st.session_state.nasdaq, st.session_state.nyse], ignore_index=True)
+        if cols[0].button('%s(%s)'%(total_market['Symbol'][index],total_market['Name'][index]), key='a%d'%i):
+            add_stock_(total_market['Symbol'][index])
+
+st.subheader('Delete ticker')
 num_stocks = len(st.session_state.stocks)
 num_cols = 6
-
 for i in range(0, num_stocks, num_cols):
     cols = st.columns(num_cols)
     for j in range(num_cols):
@@ -77,49 +74,12 @@ for i in range(0, num_stocks, num_cols):
             if cols[j].button(st.session_state.stocks[i+j], key=i+j):
                 del st.session_state.stocks[i+j]
                 st.experimental_rerun()
+                
+st.subheader('Delete all')
+if st.button('Delete all'):
+    delete_all()
+
+st.subheader('Draw a plot')
 
 if st.button('Draw a plot'):
-    stocks_prices = get_stocks_prices(st.session_state.stocks, st.session_state.start_date, end_date)
-    
-    n = int(len(st.session_state.stocks)**0.5) + 1
-    stocks_prices_changes = stocks_prices.pct_change()
-    
-    fig, ax = plt.subplots(n, n, figsize=(15, 15), dpi=300)
-    fig.suptitle('Stocks price ' + t.strftime("%Y-%m-%d"), fontsize=16)
-    
-    for i, stock in enumerate(st.session_state.stocks):
-        cases = stocks_prices[stock].dropna()
-        day = np.arange(0, len(cases))
-        popt, pcov = curve_fit(func, day, cases, p0=(20, 0.0))
-        a, b = popt
-        log_popt, log_pcov = curve_fit(log_func, day, np.log(cases).replace([np.inf, -np.inf, np.nan], 0), p0=(20, 0.0))
-        log_a, log_b = log_popt
-        # exp_popt, exp_pcov = curve_fit(exp_func, train_day, train_cases*train_day**2, p0=(20, 0.0))
-        # exp_a, exp_b = exp_popt
-        std = stocks_prices_changes[stock].std()
-        if benchmark(cases, day, a, b, std) > benchmark(cases, day, log_a, log_b, std):
-            ax[i//n, i%n].title.set_text("%s: %.1f, %.1f"%(stock, b*10000, std*1000))
-            ax[i//n, i%n].plot(cases.index, func(day, a*(1+std*30), b), 'r-', alpha=0.5)
-            ax[i//n, i%n].plot(cases.index, func(day, a*(1+std*15), b), 'r-', alpha=0.5)
-            ax[i//n, i%n].plot(cases.index, func(day, a, b), 'r-', alpha=0.5)
-            ax[i//n, i%n].plot(cases.index, func(day, a/(1+std*15), b), 'r-', alpha=0.5)
-            ax[i//n, i%n].plot(cases.index, func(day, a/(1+std*30), b), 'r-', alpha=0.5)
-        else:
-            ax[i//n, i%n].title.set_text("%s: %.1f, %.1f"%(stock, log_b*10000, std*1000))
-            ax[i//n, i%n].plot(cases.index, func(day, log_a*(1+std*30), log_b), 'g-', alpha=0.5)
-            ax[i//n, i%n].plot(cases.index, func(day, log_a*(1+std*15), log_b), 'g-', alpha=0.5)
-            ax[i//n, i%n].plot(cases.index, func(day, log_a, log_b), 'g-', alpha=0.5)
-            ax[i//n, i%n].plot(cases.index, func(day, log_a/(1+std*15), log_b), 'g-', alpha=0.5)
-            ax[i//n, i%n].plot(cases.index, func(day, log_a/(1+std*30), log_b), 'g-', alpha=0.5)
-    
-        # ax[i//n, i%n].plot(cases.index, func(day, exp_a*(1+std*30), exp_b), 'b-', alpha=0.5)
-        # ax[i//n, i%n].plot(cases.index, func(day, exp_a, exp_b), 'b-', alpha=0.5)
-        # ax[i//n, i%n].plot(cases.index, func(day, exp_a/(1+std*30), exp_b), 'b-', alpha=0.5)
-    
-        ax[i//n, i%n].plot(cases.index, cases, 'b-', alpha=0.5)
-        ax[i//n, i%n].tick_params(axis='x', labelrotation=90)
-        ax[i//n, i%n].set_yscale('log')
-    
-    plt.subplots_adjust(left=0.125, bottom=-0.1,  right=0.9, top=0.9, wspace=0.5, hspace=0.9)
-    
-    st.pyplot(fig)
+    st.pyplot(draw_plot(st.session_state.stocks, st.session_state.start_date, end_date))

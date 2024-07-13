@@ -38,8 +38,11 @@ if 'stocks' not in st.session_state:
     st.session_state.stocks = ['IXIC', 'DJI', 'TQQQ', 'QQQ', 'DDM', 'SPY']
 
 if 'nasdaq' not in st.session_state:
-    st.session_state.nasdaq = pd.read_csv('nasdaq.csv')
-    st.session_state.nyse = pd.read_csv('nyse.csv')
+    try:
+        st.session_state.nasdaq = pd.read_csv('nasdaq.csv')
+        st.session_state.nyse = pd.read_csv('nyse.csv')
+    except:
+        save_stock_list()
     
 st.title('Stock log graph')
 

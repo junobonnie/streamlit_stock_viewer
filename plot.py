@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 
-plt.rcParams['font.family'] = 'Malgun Gothic'
+plt.rcParams['font.family'] = 'NanumGothic'
 plt.rcParams['axes.unicode_minus'] = False
 
 def get_stock_prices(stock, start_date, end_date):

@@ -34,7 +34,7 @@ schedule.every().day.at("09:00").do(save_stock_list)
 end_date = datetime.now().strftime("%Y-%m-%d")
 
 if 'stocks' not in st.session_state:
-    st.session_state.stocks = []#'IXIC', 'DJI', 'TQQQ', 'QQQ', 'DDM', 'SPY']
+    st.session_state.stocks = []
 
 if 'nasdaq' not in st.session_state:
     try:
@@ -42,14 +42,28 @@ if 'nasdaq' not in st.session_state:
         st.session_state.nyse = pd.read_csv('nyse.csv')
         st.session_state.kospi = pd.read_csv('kospi.csv')
         st.session_state.kosdaq = pd.read_csv('kosdaq.csv')
+        st.session_state.etf_us = pd.read_csv('etf_us.csv')
+        st.session_state.etf_kr = pd.read_csv('etf_kr.csv')
     except:
         save_stock_list()
         st.session_state.nasdaq = pd.read_csv('nasdaq.csv')
         st.session_state.nyse = pd.read_csv('nyse.csv')
         st.session_state.kospi = pd.read_csv('kospi.csv')
         st.session_state.kosdaq = pd.read_csv('kosdaq.csv')
+        st.session_state.etf_us = pd.read_csv('etf_us.csv')
+        st.session_state.etf_kr = pd.read_csv('etf_kr.csv')
         
-total_market = pd.concat([st.session_state.nasdaq, st.session_state.nyse, st.session_state.kospi, st.session_state.kosdaq], ignore_index=True)
+total_market = pd.concat([st.session_state.nasdaq, 
+                          st.session_state.nyse, 
+                          st.session_state.kospi, 
+                          st.session_state.kosdaq,
+                          st.session_state.etf_us,
+                          st.session_state.etf_kr], ignore_index=True)
+
+us_index = [['IXIC','나스닥'], ['DJI','다우존스'], ['S&P500','S&P500'],
+              ['RUT', '러셀2000'], ['VIX', 'VIX']]
+
+kr_index = [['KS11','코스피'], ['KQ11','코스닥'], ['KS200','코스피200']]
 
 st.title('Stock log graph')
 
@@ -67,7 +81,26 @@ cols[0].dataframe(st.session_state.kospi)
 cols[1].subheader('Kosdaq')
 cols[1].dataframe(st.session_state.kosdaq)
 
+ep = st.expander('ETF(US & KR)')
+cols = ep.columns(2)
+cols[0].subheader('USA')
+cols[0].dataframe(st.session_state.etf_us)
+cols[1].subheader('KOREA')
+cols[1].dataframe(st.session_state.etf_kr)
 
+ep = st.expander('INDEX(US & KR)')
+cols = ep.columns(2)
+ct = cols[0].container()
+ct.subheader('USA')
+for i, us_index_ in enumerate(us_index):
+    if ct.button('%s(%s)'%(us_index_[0], us_index_[1]), key='a%d'%i):
+        add_stock_(us_index_[0], us_index_[1])
+ct = cols[1].container()
+ct.subheader('KOREA')
+for i, kr_index_ in enumerate(kr_index):
+    if ct.button('%s(%s)'%(kr_index_[0], kr_index_[1]), key='b%d'%i):
+        add_stock_(kr_index_[0], kr_index_[1])
+        
 st.subheader('Set the config')
 cols = st.columns(2)
 cols[0].text_input('Search a stock ticker', key='stock_', on_change=guess_stock_)
@@ -78,7 +111,7 @@ if 'candidates' in st.session_state:
     cols = st.columns(1)
     for i, cadidate in enumerate(st.session_state.candidates):
         index = cadidate[2]
-        if cols[0].button('%s(%s)'%(total_market['Symbol'][index],total_market['Name'][index]), key='a%d'%i):
+        if cols[0].button('%s(%s)'%(total_market['Symbol'][index],total_market['Name'][index]), key='c%d'%i):
             add_stock_(total_market['Symbol'][index], total_market['Name'][index])
 
 st.subheader('Delete ticker')

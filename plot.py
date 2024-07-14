@@ -54,14 +54,14 @@ def draw_plot(stock, stock_name, start_date, end_date):
     log_a, log_b = log_popt
     std = stock_prices_changes.std()
     if benchmark(cases, day, a, b, std) > benchmark(cases, day, log_a, log_b, std):
-        ax.title.set_text("%s %s: %.1f, %.1f" % (end_date, stock_name, b*10000, std*1000))
+        ax.title.set_text("%s   %s: %.1f, %.1f" % (end_date, stock_name, b*10000, std*1000))
         ax.plot(cases.index, func(day, a*(1+std*30), b), 'r-', alpha=0.5)
         ax.plot(cases.index, func(day, a*(1+std*15), b), 'r-', alpha=0.5)
         ax.plot(cases.index, func(day, a, b), 'r-', alpha=0.5)
         ax.plot(cases.index, func(day, a/(1+std*15), b), 'r-', alpha=0.5)
         ax.plot(cases.index, func(day, a/(1+std*30), b), 'r-', alpha=0.5)
     else:
-        ax.title.set_text("%s %s: %.1f, %.1f" % (end_date, stock_name, log_b*10000, std*1000))
+        ax.title.set_text("%s   %s: %.1f, %.1f" % (end_date, stock_name, log_b*10000, std*1000))
         ax.plot(cases.index, func(day, log_a*(1+std*30), log_b), 'g-', alpha=0.5)
         ax.plot(cases.index, func(day, log_a*(1+std*15), log_b), 'g-', alpha=0.5)
         ax.plot(cases.index, func(day, log_a, log_b), 'g-', alpha=0.5)

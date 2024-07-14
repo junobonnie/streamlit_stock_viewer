@@ -65,6 +65,12 @@ us_index = [['IXIC','나스닥'], ['DJI','다우존스'], ['S&P500','S&P500'],
 
 kr_index = [['KS11','코스피'], ['KQ11','코스닥'], ['KS200','코스피200']]
 
+fred = [['FRED:NASDAQCOM','나스닥종합지수'], ['FRED:ICSA','주간 실업수당 청구 건수'], 
+        ['FRED:UMCSENT','소비자심리지수'], ['FRED:HSN1F','주택 판매 지수'], 
+        ['FRED:UNRATE','실업률'], ['FRED:M2SL','M2 통화량'], 
+        ['FRED:BAMLH0A0HYM2','하이일드 채권 스프레드'], ['FRED:CPIAUCSL','소비자 물가 지수'], 
+        ['FRED:PCE','개인소비지출'], ['FRED:FEDFUNDS','미국기준금리']]
+
 st.title('Stock log graph')
 
 ep = st.expander('USA')
@@ -101,6 +107,11 @@ for i, kr_index_ in enumerate(kr_index):
     if ct.button('%s(%s)'%(kr_index_[0], kr_index_[1]), key='b%d'%i):
         add_stock_(kr_index_[0], kr_index_[1])
         
+ep = st.expander('FRED')
+for i, fred_ in enumerate(fred):
+    if ep.button('%s(%s)'%(fred_[0].replace('FRED:',''), fred_[1]), key='c%d'%i):
+        add_stock_(fred_[0], fred_[1])
+        
 st.subheader('Set the config')
 cols = st.columns(2)
 cols[0].text_input('Search a stock ticker', key='stock_', on_change=guess_stock_)
@@ -111,7 +122,7 @@ if 'candidates' in st.session_state:
     cols = st.columns(1)
     for i, cadidate in enumerate(st.session_state.candidates):
         index = cadidate[2]
-        if cols[0].button('%s(%s)'%(total_market['Symbol'][index],total_market['Name'][index]), key='c%d'%i):
+        if cols[0].button('%s(%s)'%(total_market['Symbol'][index],total_market['Name'][index]), key='d%d'%i):
             add_stock_(total_market['Symbol'][index], total_market['Name'][index])
 
 st.subheader('Delete ticker')
@@ -122,6 +133,7 @@ for i in range(0, num_stocks, num_cols):
     for j in range(num_cols):
         if i + j < num_stocks:
             stock = st.session_state.stocks[i+j]
+            print('%s(%s)'%(stock[0], stock[1]))
             if cols[j].button('%s(%s)'%(stock[0], stock[1]), key=i+j):
                 del st.session_state.stocks[i+j]
                 st.experimental_rerun()

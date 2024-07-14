@@ -15,10 +15,13 @@ plt.rcParams['font.family'] = 'NanumGothic'
 plt.rcParams['axes.unicode_minus'] = False
 
 def get_stock_prices(stock, start_date, end_date):
-    try:
-        stock_prices = fdr.DataReader(stock, start_date, end_date)['Adj Close']
-    except:
-        stock_prices = fdr.DataReader(stock, start_date, end_date)['Close']
+    if 'FRED:' in stock:
+        stock_prices = fdr.DataReader(stock, start_date, end_date)[stock.replace('FRED:', '')]
+    else:
+        try:
+            stock_prices = fdr.DataReader(stock, start_date, end_date)['Adj Close']
+        except:
+            stock_prices = fdr.DataReader(stock, start_date, end_date)['Close']
     return stock_prices
 
 def func(x, a, b):

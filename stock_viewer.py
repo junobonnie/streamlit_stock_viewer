@@ -142,7 +142,8 @@ if st.button('Delete all'):
     delete_all()
 
 st.subheader('Draw a plot')
+is_log = st.checkbox('Log scale', value=True)
 
 if st.button('Draw a plot'):
     for stock in st.session_state.stocks:
-        st.pyplot(draw_plot(stock[0], stock[1], st.session_state.start_date, end_date))
+        st.pyplot(draw_plot(stock[0], stock[1], st.session_state.start_date, end_date, is_log))

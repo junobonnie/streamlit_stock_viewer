@@ -41,7 +41,7 @@ def benchmark(cases, day, a, b, std):
     correct_cases = correct_cases.apply(lambda x: binarize(x, std))
     return np.dot(correct_cases.T, day)
 
-def draw_plot(stock, stock_name, start_date, end_date):
+def draw_plot(stock, stock_name, start_date, end_date, is_log):
     stock_prices = get_stock_prices(stock, start_date, end_date)
     stock_prices_changes = stock_prices.pct_change()
     fig = plt.figure(figsize=(9, 3), dpi=100)
@@ -72,7 +72,8 @@ def draw_plot(stock, stock_name, start_date, end_date):
         ax.plot(cases.index, func(day, log_a/(1+std*30), log_b), 'g-', alpha=0.5)
     ax.plot(cases.index, cases, 'b-', alpha=0.5)
     ax.tick_params(axis='x', labelrotation=90)
-    ax.set_yscale('log')
+    if is_log:
+        ax.set_yscale('log')
 
     plt.subplots_adjust(left=0.125, bottom=-0.1, right=0.9, top=0.9, wspace=0.5, hspace=0.9)
     return fig

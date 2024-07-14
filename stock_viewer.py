@@ -133,8 +133,7 @@ for i in range(0, num_stocks, num_cols):
     for j in range(num_cols):
         if i + j < num_stocks:
             stock = st.session_state.stocks[i+j]
-            print('%s(%s)'%(stock[0], stock[1]))
-            if cols[j].button('%s(%s)'%(stock[0], stock[1]), key=i+j):
+            if cols[j].button('%s(%s)'%(stock[0].replace('FRED:','') if 'FRED:' in stock[0] else stock[0], stock[1]), key=i+j):
                 del st.session_state.stocks[i+j]
                 st.experimental_rerun()
                 

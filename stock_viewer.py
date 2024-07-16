@@ -19,9 +19,9 @@ def guess_stock_():
     st.session_state.candidates = process.extract(stock_, pd.concat([total_market['Symbol'], total_market['Name']], axis = 0), limit=10)
     st.session_state.stock_ = ""
     
-def add_stock_(stock_, stock_name_):
+def add_stock_(stock_):
     if not stock_ in st.session_state.stocks:
-        st.session_state.stocks.append([stock_, stock_name_])
+        st.session_state.stocks.append(stock_)
     st.session_state.candidates = []
     st.experimental_rerun()
 
@@ -100,17 +100,17 @@ ct = cols[0].container()
 ct.subheader('USA')
 for i, us_index_ in enumerate(us_index):
     if ct.button('%s(%s)'%(us_index_[0], us_index_[1]), key='a%d'%i):
-        add_stock_(us_index_[0], us_index_[1])
+        add_stock_(us_index_)
 ct = cols[1].container()
 ct.subheader('KOREA')
 for i, kr_index_ in enumerate(kr_index):
     if ct.button('%s(%s)'%(kr_index_[0], kr_index_[1]), key='b%d'%i):
-        add_stock_(kr_index_[0], kr_index_[1])
+        add_stock_(kr_index_)
         
 ep = st.expander('FRED')
 for i, fred_ in enumerate(fred):
     if ep.button('%s(%s)'%(fred_[0].replace('FRED:',''), fred_[1]), key='c%d'%i):
-        add_stock_(fred_[0], fred_[1])
+        add_stock_(fred_)
         
 st.subheader('Set the config')
 cols = st.columns(2)
@@ -123,7 +123,7 @@ if 'candidates' in st.session_state:
     for i, cadidate in enumerate(st.session_state.candidates):
         index = cadidate[2]
         if cols[0].button('%s(%s)'%(total_market['Symbol'][index],total_market['Name'][index]), key='d%d'%i):
-            add_stock_(total_market['Symbol'][index], total_market['Name'][index])
+            add_stock_([total_market['Symbol'][index], total_market['Name'][index]])
 
 st.subheader('Delete ticker')
 num_stocks = len(st.session_state.stocks)

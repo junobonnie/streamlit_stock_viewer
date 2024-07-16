@@ -73,7 +73,7 @@ def draw_plot(stock, stock_name, start_date, end_date, is_log):
     ax.tick_params(axis='x', labelrotation=90)
     if is_log:
         ax.set_yscale('log')
-    ax.grid()
+    ax.grid(b=True)
     plt.subplots_adjust(left=0.125, bottom=-0.1, right=0.9, top=0.9, wspace=0.5, hspace=0.9)
     return fig
 

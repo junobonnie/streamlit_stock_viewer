@@ -50,7 +50,6 @@ def draw_plot(stock, stock_name, start_date, end_date, is_log):
     
     cases = stock_prices.dropna()
     day = np.arange(0, len(cases))
-    print(cases)
     popt, pcov = curve_fit(func, day, cases, p0=(20, 0.0))
     a, b = popt
     log_popt, log_pcov = curve_fit(log_func, day, np.log(cases).replace([np.inf, -np.inf, np.nan], 0), p0=(20, 0.0))
@@ -74,7 +73,7 @@ def draw_plot(stock, stock_name, start_date, end_date, is_log):
     ax.tick_params(axis='x', labelrotation=90)
     if is_log:
         ax.set_yscale('log')
-
+    ax.grid()
     plt.subplots_adjust(left=0.125, bottom=-0.1, right=0.9, top=0.9, wspace=0.5, hspace=0.9)
     return fig
 

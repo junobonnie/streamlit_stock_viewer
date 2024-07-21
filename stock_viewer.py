@@ -9,7 +9,7 @@ import pandas as pd
 from datetime import datetime
 import streamlit as st
 from thefuzz import process
-from plot import draw_plot, draw_stock_map
+from plot import draw_plot, draw_stock_maps
 from save import save_stock_list
 import schedule
 
@@ -29,8 +29,8 @@ def delete_all():
     st.experimental_rerun()
 
 @st.cache_data(show_spinner="Draw stock map...")
-def draw_stock_map_(stock_, deltatime):
-    return draw_stock_map(stock_, deltatime)
+def draw_stock_maps_():
+    return draw_stock_maps()
 
 schedule.every().day.at("09:00").do(save_stock_list)
 schedule.every().day.at("09:05").do(st.cache_data.clear)
@@ -38,14 +38,6 @@ schedule.every().day.at("09:05").do(st.cache_data.clear)
 # with open('file.html', 'r', encoding='utf-8') as f:
 #    html = f.read()
 # st.components.v1.html(html, height=600)
-
-stock_map = []
-deltatimes = ['1d', '5d', '1mo', '3mo', '6mo', '1y', '5y']
-for deltatime in deltatimes:
-    stock_map.append(draw_stock_map_('test', deltatime))
-    
-deltatime = st.selectbox('기간 선택', deltatimes)
-st.plotly_chart(stock_map[deltatimes.index(deltatime)], use_container_width=True)
 
 end_date = datetime.now().strftime("%Y-%m-%d")
 
@@ -87,79 +79,91 @@ fred = [['FRED:NASDAQCOM','나스닥종합지수'], ['FRED:ICSA','주간 실업�
         ['FRED:BAMLH0A0HYM2','하이일드 채권 스프레드'], ['FRED:CPIAUCSL','소비자 물가 지수'], 
         ['FRED:PCE','개인소비지출'], ['FRED:FEDFUNDS','미국기준금리']]
 
-st.title('Stock log graph')
+###################################
+tab = st.tabs(['Stock map', 'Stock log graph', 'List of stocks & ETFs'])
+###################################
+with tab[0]:
+    st.title('Stock map')
+    deltatimes = ['1d', '5d', '1mo', '3mo', '6mo', '1y', '5y']
+    stock_map_plots = draw_stock_maps_()
+    deltatime = st.selectbox('Select period', deltatimes)
+    st.plotly_chart(stock_map_plots[deltatimes.index(deltatime)], use_container_width=True)
+###################################
+with tab[1]:
+    st.title('Stock log graph')
+    ep = st.expander('INDEX(US & KR)')
+    cols = ep.columns(2)
+    ct = cols[0].container()
+    ct.subheader('USA')
+    for i, us_index_ in enumerate(us_index):
+        if ct.button('%s(%s)'%(us_index_[0], us_index_[1]), key='a%d'%i):
+            add_stock_(us_index_)
+    ct = cols[1].container()
+    ct.subheader('KOREA')
+    for i, kr_index_ in enumerate(kr_index):
+        if ct.button('%s(%s)'%(kr_index_[0], kr_index_[1]), key='b%d'%i):
+            add_stock_(kr_index_)
+            
+    ep = st.expander('FRED')
+    for i, fred_ in enumerate(fred):
+        if ep.button('%s(%s)'%(fred_[0].replace('FRED:',''), fred_[1]), key='c%d'%i):
+            add_stock_(fred_)
+            
+    st.subheader('Set the config')
+    cols = st.columns(2)
+    cols[0].text_input('Search a stock ticker', key='stock_', on_change=guess_stock_)
+    start_date = datetime.strptime('2008-01-01', '%Y-%m-%d')
+    st.session_state.start_date = cols[1].date_input('Start Date input', start_date)
 
-ep = st.expander('USA')
-cols = ep.columns(2)
-cols[0].subheader('Nasdaq')
-cols[0].dataframe(st.session_state.nasdaq)
-cols[1].subheader('Nyse')
-cols[1].dataframe(st.session_state.nyse)
+    if 'candidates' in st.session_state:
+        cols = st.columns(1)
+        for i, cadidate in enumerate(st.session_state.candidates):
+            index = cadidate[2]
+            if cols[0].button('%s(%s)'%(total_market['Symbol'][index],total_market['Name'][index]), key='d%d'%i):
+                add_stock_([total_market['Symbol'][index], total_market['Name'][index]])
 
-ep = st.expander('KOREA')
-cols = ep.columns(2)
-cols[0].subheader('Kospi')
-cols[0].dataframe(st.session_state.kospi)
-cols[1].subheader('Kosdaq')
-cols[1].dataframe(st.session_state.kosdaq)
+    st.subheader('Delete ticker')
+    num_stocks = len(st.session_state.stocks)
+    num_cols = 6
+    for i in range(0, num_stocks, num_cols):
+        cols = st.columns(num_cols)
+        for j in range(num_cols):
+            if i + j < num_stocks:
+                stock = st.session_state.stocks[i+j]
+                if cols[j].button('%s(%s)'%(stock[0].replace('FRED:','') if 'FRED:' in stock[0] else stock[0], stock[1]), key=i+j):
+                    del st.session_state.stocks[i+j]
+                    st.experimental_rerun()
+                    
+    st.subheader('Delete all')
+    if st.button('Delete all'):
+        delete_all()
 
-ep = st.expander('ETF(US & KR)')
-cols = ep.columns(2)
-cols[0].subheader('USA')
-cols[0].dataframe(st.session_state.etf_us)
-cols[1].subheader('KOREA')
-cols[1].dataframe(st.session_state.etf_kr)
+    st.subheader('Draw a plot')
+    is_log = st.checkbox('Log scale', value=True)
 
-ep = st.expander('INDEX(US & KR)')
-cols = ep.columns(2)
-ct = cols[0].container()
-ct.subheader('USA')
-for i, us_index_ in enumerate(us_index):
-    if ct.button('%s(%s)'%(us_index_[0], us_index_[1]), key='a%d'%i):
-        add_stock_(us_index_)
-ct = cols[1].container()
-ct.subheader('KOREA')
-for i, kr_index_ in enumerate(kr_index):
-    if ct.button('%s(%s)'%(kr_index_[0], kr_index_[1]), key='b%d'%i):
-        add_stock_(kr_index_)
-        
-ep = st.expander('FRED')
-for i, fred_ in enumerate(fred):
-    if ep.button('%s(%s)'%(fred_[0].replace('FRED:',''), fred_[1]), key='c%d'%i):
-        add_stock_(fred_)
-        
-st.subheader('Set the config')
-cols = st.columns(2)
-cols[0].text_input('Search a stock ticker', key='stock_', on_change=guess_stock_)
-start_date = datetime.strptime('2008-01-01', '%Y-%m-%d')
-st.session_state.start_date = cols[1].date_input('Start Date input', start_date)
+    if st.button('Draw a plot'):
+        for stock in st.session_state.stocks:
+            st.pyplot(draw_plot(stock[0], stock[1], st.session_state.start_date, end_date, is_log))
+###################################
+with tab[2]:
+    st.title('List of stocks & ETFs')
+    ep = st.expander('USA')
+    cols = ep.columns(2)
+    cols[0].subheader('Nasdaq')
+    cols[0].dataframe(st.session_state.nasdaq)
+    cols[1].subheader('Nyse')
+    cols[1].dataframe(st.session_state.nyse)
 
-if 'candidates' in st.session_state:
-    cols = st.columns(1)
-    for i, cadidate in enumerate(st.session_state.candidates):
-        index = cadidate[2]
-        if cols[0].button('%s(%s)'%(total_market['Symbol'][index],total_market['Name'][index]), key='d%d'%i):
-            add_stock_([total_market['Symbol'][index], total_market['Name'][index]])
+    ep = st.expander('KOREA')
+    cols = ep.columns(2)
+    cols[0].subheader('Kospi')
+    cols[0].dataframe(st.session_state.kospi)
+    cols[1].subheader('Kosdaq')
+    cols[1].dataframe(st.session_state.kosdaq)
 
-st.subheader('Delete ticker')
-num_stocks = len(st.session_state.stocks)
-num_cols = 6
-for i in range(0, num_stocks, num_cols):
-    cols = st.columns(num_cols)
-    for j in range(num_cols):
-        if i + j < num_stocks:
-            stock = st.session_state.stocks[i+j]
-            if cols[j].button('%s(%s)'%(stock[0].replace('FRED:','') if 'FRED:' in stock[0] else stock[0], stock[1]), key=i+j):
-                del st.session_state.stocks[i+j]
-                st.experimental_rerun()
-                
-st.subheader('Delete all')
-if st.button('Delete all'):
-    delete_all()
-
-st.subheader('Draw a plot')
-is_log = st.checkbox('Log scale', value=True)
-
-if st.button('Draw a plot'):
-    for stock in st.session_state.stocks:
-        st.pyplot(draw_plot(stock[0], stock[1], st.session_state.start_date, end_date, is_log))
+    ep = st.expander('ETF(US & KR)')
+    cols = ep.columns(2)
+    cols[0].subheader('USA')
+    cols[0].dataframe(st.session_state.etf_us)
+    cols[1].subheader('KOREA')
+    cols[1].dataframe(st.session_state.etf_kr)

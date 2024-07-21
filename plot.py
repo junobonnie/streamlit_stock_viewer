@@ -11,6 +11,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import yfinance as yf
+from datetime import datetime, timedelta
 
 plt.rcParams['font.family'] = 'NanumGothic'
 plt.rcParams['axes.unicode_minus'] = False
@@ -78,11 +79,37 @@ def draw_plot(stock, stock_name, start_date, end_date, is_log=True):
     plt.subplots_adjust(left=0.125, bottom=-0.1, right=0.9, top=0.9, wspace=0.5, hspace=0.9)
     return fig
 
-def get_stock_change(stock, deltatime):
-    history = yf.Ticker(stock).history(interval='1d', period=deltatime)
+def get_stock_history(ticker):
+    history = ticker.history(interval='1d', period='5y')
     if history.empty:
-        history = yf.Ticker(stock).history(interval='1d', period='max')
-    return history['Close'][-1], (history['Close'][-1] - history['Open'][0])/history['Open'][0] 
+        history = ticker.history(interval='1d', period='max')
+    return history#['Close'][-1], (history['Close'][-1] - history['Open'][0])/history['Open'][0] 
+
+def get_stock_change(history, deltatime):
+    if deltatime == '1d':
+        if len(history) > 1:
+            return (history['Close'][-1] - history['Close'][-2])/history['Close'][-2]
+        else:
+            return (history['Close'][-1] - history['Close'][0])/history['Close'][0]
+    elif deltatime == '5d':
+        if len(history) > 5:
+            return (history['Close'][-1] - history['Close'][-6])/history['Close'][-6]
+        else:
+            return (history['Close'][-1] - history['Close'][0])/history['Close'][0]
+    elif deltatime == '1mo':
+        history = history[(datetime.now()-timedelta(days=30)).strftime("%Y-%m-%d"):]
+        return  (history['Close'][-1] - history['Close'][0])/history['Close'][0]
+    elif deltatime == '3mo':
+        history = history[(datetime.now()-timedelta(days=91)).strftime("%Y-%m-%d"):]
+        return  (history['Close'][-1] - history['Close'][0])/history['Close'][0]
+    elif deltatime == '6mo':
+        history = history[(datetime.now()-timedelta(days=182)).strftime("%Y-%m-%d"):]
+        return  (history['Close'][-1] - history['Close'][0])/history['Close'][0]
+    elif deltatime == '1y':
+        history = history[(datetime.now()-timedelta(days=365)).strftime("%Y-%m-%d"):]
+        return  (history['Close'][-1] - history['Close'][0])/history['Close'][0]
+    elif deltatime == '5y':
+        return  (history['Close'][-1] - history['Close'][0])/history['Close'][0]
 
 def new_colorbar(deltatime):
     if deltatime == '1d':
@@ -105,45 +132,66 @@ def new_colorbar(deltatime):
     ticktext = ['-%s%%'%string, '0%', '%s%%'%string]
     return range_color, tickvals, ticktext
 
-def draw_stock_map(market, deltatime):
+def make_stock_maps():
     stocks = pd.read_csv('snp500.csv')
-    stock_map = {}
-    stock_map["Sector"] = []
-    stock_map["Industry"] = []
-    stock_map["Symbol"] = []
-    stock_map["Name"] = []
-    stock_map["Price"] = []
-    stock_map["Change"] = []
-    stock_map['marketCap'] = []
+    stock_maps = {}
+    deltatimes = ['1d', '5d', '1mo', '3mo', '6mo', '1y', '5y']
+    for deltatime in deltatimes:
+        stock_map = {}
+        stock_map["Sector"] = []
+        stock_map["Industry"] = []
+        stock_map["Symbol"] = []
+        stock_map["Name"] = []
+        stock_map["Price"] = []
+        stock_map["Change"] = []
+        stock_map['marketCap'] = []
+        stock_maps[deltatime] = stock_map
+
     for stock in stocks['Symbol']:
-        ticker = yf.Ticker(stock).info
-        if not 'sector' in ticker:
+        ticker = yf.Ticker(stock)
+        info = ticker.info
+        if not 'sector' in ticker.info:
             stock = stock[:-1] + '-' + stock[-1]
-            ticker = yf.Ticker(stock).info
-        stock_map['Sector'].append(ticker['sector'])
-        stock_map['Industry'].append(ticker['industry'])
-        stock_map["Symbol"].append(stock)
-        stock_map["Name"].append(ticker['longName'])
-        price, change = get_stock_change(stock, deltatime)
-        stock_map["Price"].append(price)
-        stock_map["Change"].append(change)
-        stock_map['marketCap'].append(ticker['marketCap'])
-    stock_map = pd.DataFrame(stock_map)
-    range_color, tickvals, ticktext = new_colorbar(deltatime)
-    fig = px.treemap(stock_map, path=[px.Constant("S&P500"), 'Sector', 'Industry','Symbol'], values='marketCap',
-                  color='Change', hover_data=['Change','Symbol'], 
-                  range_color=range_color, color_continuous_scale=[[0, 'rgb(246, 53, 56)'], [0.5, 'rgb(65, 69, 84)'], [1, 'rgb(48, 204, 90)']])
-    stock_map.sort_values(by=['Symbol', 'Industry', 'Sector'], inplace=True)
+            ticker = yf.Ticker(stock)
+            info = ticker.info
+        history = get_stock_history(ticker)
+        for deltatime in deltatimes:
+            stock_map = stock_maps[deltatime]
+            stock_map['Sector'].append(info['sector'])
+            stock_map['Industry'].append(info['industry'])
+            stock_map["Symbol"].append(stock)
+            stock_map["Name"].append(info['longName'])
+            price = history['Close'][-1]
+            change = get_stock_change(history, deltatime)
+            stock_map["Price"].append(price)
+            stock_map["Change"].append(change)
+            stock_map['marketCap'].append(info['marketCap'])
 
-    text = ['<b style="font-size:25px">%s<br><br>%.2f%%</b>'%(i, 100*stock_map[stock_map['Symbol']==i]['Change']) for i in stock_map['Symbol']]
-    hovertext = ['Name: %s <br> Price: $%.2f'%(stock_map[stock_map['Symbol']==i]['Name'].values[0], stock_map[stock_map['Symbol']==i]['Price']) for i in stock_map['Symbol']]
-    
-    fig.update_traces(textposition='middle center', text = text, textinfo = 'text')
-    fig.update_traces(textfont_color='white',textfont_size=15, hovertemplate='<b>%{label}</b> <br>%{hovertext} <br>Change: %{value}', hovertext=hovertext)
-    fig.update_layout(margin = dict(t=30, l=5, r=5, b=5), height=600)
-    fig.update_coloraxes(colorbar={'tickvals': tickvals, 'ticktext': ticktext, 'orientation':'h', 'thickness':20, 'y': -0.12})
-    return fig#write_html("file.html")#write_image('./test.png')
+    for deltatime in deltatimes:
+        stock_maps[deltatime] = pd.DataFrame(stock_maps[deltatime])
+    return stock_maps
 
+def draw_stock_maps():
+    stock_maps = make_stock_maps()
+    stock_map_plots = []
+    for deltatime in ['1d', '5d', '1mo', '3mo', '6mo', '1y', '5y']:
+        stock_map = stock_maps[deltatime]
+        range_color, tickvals, ticktext = new_colorbar(deltatime)
+        fig = px.treemap(stock_map, path=[px.Constant("S&P500"), 'Sector', 'Industry','Symbol'], values='marketCap',
+                    color='Change', hover_data=['Change','Symbol'], 
+                    range_color=range_color, color_continuous_scale=[[0, 'rgb(246, 53, 56)'], [0.5, 'rgb(65, 69, 84)'], [1, 'rgb(48, 204, 90)']])
+        stock_map.sort_values(by=['Symbol', 'Industry', 'Sector'], inplace=True)
+
+        text = ['<b style="font-size:25px">%s<br><br>%.2f%%</b>'%(i, 100*stock_map[stock_map['Symbol']==i]['Change']) for i in stock_map['Symbol']]
+        hovertext = ['Name: %s <br> Price: $%.2f <br> Change: %.2f%%'%(stock_map[stock_map['Symbol']==i]['Name'].values[0],
+                                                                        stock_map[stock_map['Symbol']==i]['Price'], 
+                                                                        100*stock_map[stock_map['Symbol']==i]['Change']) for i in stock_map['Symbol']]
+        fig.update_traces(textposition='middle center', text = text, textinfo = 'text')
+        fig.update_traces(textfont_color='white',textfont_size=15, hovertemplate='<b>%{label}</b> <br>%{hovertext} <br>Ratio in S&P 500: %{percentRoot:.2%}  <br>Ratio in parent: %{percentParent:.2%}', hovertext=hovertext)
+        fig.update_layout(margin = dict(t=30, l=5, r=5, b=5), height=600)
+        fig.update_coloraxes(colorbar={'tickvals': tickvals, 'ticktext': ticktext, 'orientation':'h', 'thickness':20, 'y': -0.12})
+        stock_map_plots.append(fig)
+    return stock_map_plots
 if __name__ == "__main__":
     stock = 'MSFT'
     name = "Microsoft"

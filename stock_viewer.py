@@ -5,12 +5,11 @@ Created on Fri Jul 12 19:24:19 2024
 @author: replica
 """
 
-import FinanceDataReader as fdr
 import pandas as pd
 from datetime import datetime
 import streamlit as st
 from thefuzz import process
-from plot import draw_plot
+from plot import draw_plot, draw_stock_map
 from save import save_stock_list
 import schedule
 
@@ -29,7 +28,24 @@ def delete_all():
     st.session_state.stocks = []
     st.experimental_rerun()
 
+@st.cache_data(show_spinner="Draw stock map...")
+def draw_stock_map_(stock_, deltatime):
+    return draw_stock_map(stock_, deltatime)
+
 schedule.every().day.at("09:00").do(save_stock_list)
+schedule.every().day.at("09:05").do(st.cache_data.clear)
+
+# with open('file.html', 'r', encoding='utf-8') as f:
+#    html = f.read()
+# st.components.v1.html(html, height=600)
+
+stock_map = []
+deltatimes = ['1d', '5d', '1mo', '3mo', '6mo', '1y', '5y']
+for deltatime in deltatimes:
+    stock_map.append(draw_stock_map_('test', deltatime))
+    
+deltatime = st.selectbox('기간 선택', deltatimes)
+st.plotly_chart(stock_map[deltatimes.index(deltatime)], use_container_width=True)
 
 end_date = datetime.now().strftime("%Y-%m-%d")
 

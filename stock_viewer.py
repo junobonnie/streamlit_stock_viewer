@@ -80,6 +80,7 @@ fred = [['FRED:NASDAQCOM','나스닥종합지수'], ['FRED:ICSA','주간 실업�
         ['FRED:PCE','개인소비지출'], ['FRED:FEDFUNDS','미국기준금리']]
 
 ###################################
+st.set_page_config(layout="wide")
 tab = st.tabs(['Stock map', 'Stock log graph', 'List of stocks & ETFs'])
 ###################################
 with tab[0]:

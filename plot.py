@@ -83,7 +83,7 @@ def get_stock_history(ticker):
     history = ticker.history(interval='1d', period='5y')
     if history.empty:
         history = ticker.history(interval='1d', period='max')
-    return history#['Close'][-1], (history['Close'][-1] - history['Open'][0])/history['Open'][0] 
+    return history
 
 def get_stock_change(history, deltatime):
     if deltatime == '1d':
@@ -178,16 +178,21 @@ def draw_stock_maps():
         stock_map = stock_maps[deltatime]
         range_color, tickvals, ticktext = new_colorbar(deltatime)
         fig = px.treemap(stock_map, path=[px.Constant("S&P500"), 'Sector', 'Industry','Symbol'], values='marketCap',
-                    color='Change', hover_data=['Change','Symbol'], 
+                    color='Change', custom_data=['Name', 'Price', 'Change'], 
                     range_color=range_color, color_continuous_scale=[[0, 'rgb(246, 53, 56)'], [0.5, 'rgb(65, 69, 84)'], [1, 'rgb(48, 204, 90)']])
-        stock_map.sort_values(by=['Symbol', 'Industry', 'Sector'], inplace=True)
-
-        text = ['<b style="font-size:25px">%s<br><br>%.2f%%</b>'%(i, 100*stock_map[stock_map['Symbol']==i]['Change']) for i in stock_map['Symbol']]
-        hovertext = ['Name: %s <br> Price: $%.2f <br> Change: %.2f%%'%(stock_map[stock_map['Symbol']==i]['Name'].values[0],
-                                                                        stock_map[stock_map['Symbol']==i]['Price'], 
-                                                                        100*stock_map[stock_map['Symbol']==i]['Change']) for i in stock_map['Symbol']]
-        fig.update_traces(textposition='middle center', text = text, textinfo = 'text')
-        fig.update_traces(textfont_color='white',textfont_size=15, hovertemplate='<b>%{label}</b> <br>%{hovertext} <br>Ratio in S&P 500: %{percentRoot:.2%}  <br>Ratio in parent: %{percentParent:.2%}', hovertext=hovertext)
+        #stock_map.sort_values(by=['Symbol', 'Industry', 'Sector'], inplace=True)
+        texttemplate = "<br>".join(['<b style="font-size:25px">%{label}</b>',
+                                    '<b style="font-size:25px">%{customdata[2]:.2%}</b>',
+                                    "$%{customdata[1]:.2f}"])
+        fig.update_traces(textposition='middle center', texttemplate=texttemplate)
+        hovertemplate = "<br>".join(["<b>%{label}</b>",
+                                        "ID: %{id}",
+                                        "Name: %{customdata[0]}",
+                                        "Price: $%{customdata[1]:.2f}",
+                                        "Change: %{customdata[2]:.2%}",
+                                        "Ratio in S&P 500: %{percentRoot:.2%}",
+                                        "Ratio in parent: %{percentParent:.2%}"])
+        fig.update_traces(textfont_color='white',textfont_size=15, hovertemplate=hovertemplate)
         fig.update_layout(margin = dict(t=30, l=5, r=5, b=5), height=600)
         fig.update_coloraxes(colorbar={'tickvals': tickvals, 'ticktext': ticktext, 'orientation':'h', 'thickness':20, 'y': -0.12})
         stock_map_plots.append(fig)

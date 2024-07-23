@@ -11,7 +11,6 @@ import streamlit as st
 from thefuzz import process
 from plot import draw_plot, draw_stock_maps
 from save import save_stock_list
-import schedule
 
 def guess_stock_():
     stock_ = st.session_state.stock_#.upper()
@@ -28,12 +27,9 @@ def delete_all():
     st.session_state.stocks = []
     st.experimental_rerun()
 
-@st.cache_data(show_spinner="Draw stock map...")
+@st.cache_data(ttl=86400, show_spinner="Draw stock map...")
 def draw_stock_maps_():
     return draw_stock_maps()
-
-schedule.every().day.at("09:00").do(save_stock_list)
-schedule.every().day.at("09:05").do(st.cache_data.clear)
 
 # with open('file.html', 'r', encoding='utf-8') as f:
 #    html = f.read()

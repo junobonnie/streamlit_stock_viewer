@@ -191,7 +191,8 @@ def draw_stock_maps():
                                         "Price: $%{customdata[1]:.2f}",
                                         "Change: %{customdata[2]:.2%}",
                                         "Ratio in S&P 500: %{percentRoot:.2%}",
-                                        "Ratio in parent: %{percentParent:.2%}"])
+                                        "Ratio in parent: %{percentParent:.2%}",
+                                        "Market Cap: $%{value}"])
         fig.update_traces(textfont_color='white',textfont_size=15, hovertemplate=hovertemplate)
         fig.update_layout(margin = dict(t=30, l=5, r=5, b=5), height=600)
         fig.update_coloraxes(colorbar={'tickvals': tickvals, 'ticktext': ticktext, 'orientation':'h', 'thickness':20, 'y': -0.12})

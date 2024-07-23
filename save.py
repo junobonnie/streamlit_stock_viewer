@@ -20,6 +20,7 @@ def save_stock_list():
     code_to_symbol(fdr.StockListing('KOSDAQ')).to_csv('kosdaq.csv', index=False)
     fdr.StockListing('ETF/US').to_csv('etf_us.csv', index=False)
     fdr.StockListing('ETF/KR').to_csv('etf_kr.csv', index=False)
+    print('Log: Stock list saved')
         
 if __name__ == '__main__':
     save_stock_list()

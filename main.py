@@ -4,7 +4,7 @@ import os
 from save import save_stock_list
 from multiprocessing import Process
 def run_stock_viewer():
-    os.system('streamlit run stock_viewer.py --server.port 35001')
+    os.system('streamlit run stock_viewer.py')
     
 def run_save():    
     schedule.every().day.at("09:00").do(save_stock_list)

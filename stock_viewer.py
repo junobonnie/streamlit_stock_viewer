@@ -27,7 +27,7 @@ def delete_all():
     st.session_state.stocks = []
     st.experimental_rerun()
 
-@st.cache_data(ttl=86400, show_spinner="Draw stock map...")
+@st.cache_data(ttl=3600, show_spinner="Draw stock map...")
 def draw_stock_maps_():
     return draw_stock_maps()
 

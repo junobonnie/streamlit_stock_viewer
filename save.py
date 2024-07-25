@@ -9,6 +9,7 @@ import FinanceDataReader as fdr
 import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta
+from math import isnan
 
 def get_stock_history(ticker):
     history = ticker.history(interval='1d', period='5y')
@@ -40,6 +41,8 @@ def get_stock_change(history, deltatime):
         history = history[(datetime.now()-timedelta(days=365)).strftime("%Y-%m-%d"):]
         return  (history['Close'][-1] - history['Close'][0])/history['Close'][0]
     elif deltatime == '5y':
+        if isnan(history['Close'][0]):
+            return (history['Close'][-1] - history['Close'][1])/history['Close'][1]
         return  (history['Close'][-1] - history['Close'][0])/history['Close'][0]
     
 def save_stock_map():

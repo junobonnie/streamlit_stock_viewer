@@ -65,6 +65,9 @@ def save_stock_map():
             stock = stock[:-1] + '-' + stock[-1]
             ticker = yf.Ticker(stock)
             info = ticker.info
+        if not 'sector' in ticker.info:
+            print(stock)
+            continue
         stock_map["Symbol"].append(stock)
         stock_map["Name"].append(info['longName'])
         stock_map['Industry'].append(info['industry'])

@@ -73,7 +73,7 @@ fred = [['FRED:NASDAQCOM','나스닥종합지수'], ['FRED:ICSA','주간 실업�
         ['FRED:UMCSENT','소비자심리지수'], ['FRED:HSN1F','주택 판매 지수'], 
         ['FRED:UNRATE','실업률'], ['FRED:M2SL','M2 통화량'], 
         ['FRED:BAMLH0A0HYM2','하이일드 채권 스프레드'], ['FRED:CPIAUCSL','소비자 물가 지수'], 
-        ['FRED:PCE','개인소비지출'], ['FRED:FEDFUNDS','미국기준금리'], ['FRED:DGS20':'미국국채 20년수익률']]
+        ['FRED:PCE','개인소비지출'], ['FRED:FEDFUNDS','미국기준금리'], ['FRED:DGS20','미국국채 20년수익률']]
 
 ###################################
 st.set_page_config(layout="wide")

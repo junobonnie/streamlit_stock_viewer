@@ -47,7 +47,7 @@ def draw_plot(stock, stock_name, start_date, end_date, is_log=True):
     fig = plt.figure(figsize=(9, 3), dpi=100)
     ax = fig.add_subplot(1,1,1)
     ax.set_title('Stock price ' + end_date, fontsize=16)
-    
+
     cases = stock_prices.dropna()
     day = np.arange(0, len(cases))
     popt, pcov = curve_fit(func, day, cases, p0=(20, 0.0))
@@ -131,8 +131,3 @@ if __name__ == "__main__":
     end_date = '2024-07-20'
     # draw_plot(stock, name, start_date, end_date)
     draw_stock_maps()
-    
-    
-    
-    
-    

@@ -6,7 +6,9 @@ from multiprocessing import Process
 def run_stock_viewer():
     os.system('streamlit run stock_viewer.py')
     
-def run_save():    
+def run_save():
+    os.system("pip install --upgrade pip")
+    os.system("pip install -U yfinance")
     schedule.every().day.at("09:00").do(save_stock_list)
     while True:
         schedule.run_pending()
